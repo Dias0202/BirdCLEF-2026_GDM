@@ -1,0 +1,24 @@
+# Base Data Science
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+
+# Audio Processing
+librosa
+soundfile
+
+# Deep Learning
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch
+torchvision
+torchaudio
+timm
+
+# Experiment Tracking
+mlflow
+
+# Utilities
+tqdm
+opencv-python

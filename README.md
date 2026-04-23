@@ -154,9 +154,6 @@ python create_dummy_test.py   # generate synthetic 60-second soundscapes
 python src/inference.py
 ```
 
-**Kaggle submission**
-
-Upload `best_model.pth` to *Kaggle Models* (Framework: PyTorch, License: Apache 2.0), add it to `kaggle_submission.ipynb` alongside the competition data, set Internet OFF, and submit.
 
 ---
 

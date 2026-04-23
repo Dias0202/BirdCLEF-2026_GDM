@@ -1,97 +1,173 @@
-# 🦜 BirdCLEF 2026 - Pantanal Ecosystem Soundscape Detection
+# BirdCLEF 2026 — Pantanal Acoustic Species Identification
 
-![BirdCLEF 2026](https://img.shields.io/badge/Competition-BirdCLEF_2026-blue?style=for-the-badge&logo=kaggle)
-![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)
-![Explainable AI](https://img.shields.io/badge/XAI-Grad--CAM-brightgreen?style=for-the-badge)
+![Kaggle](https://img.shields.io/badge/Competition-BirdCLEF_2026-blue?style=flat-square&logo=kaggle)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?style=flat-square&logo=pytorch&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
+![XAI](https://img.shields.io/badge/XAI-Grad--CAM-brightgreen?style=flat-square)
 
-## Overview
-
-The Pantanal wetlands span over 150,000 km² and are home to unparalleled biodiversity. Monitoring this vast, remote landscape manually is practically impossible. The **BirdCLEF 2026** challenge asks us to listen to the ecosystem: identifying wildlife species from passive acoustic monitoring (PAM) recordings.
-
-Our solution provides a **robust, lightweight, and highly explainable Machine Learning pipeline** capable of analyzing continuous audio data to automatically identify 234 different species of birds, amphibians, mammals, and insects.
+End-to-end Sound Event Detection (SED) pipeline for identifying 234 Pantanal wildlife species from continuous passive acoustic monitoring recordings. Built for the [BirdCLEF+ 2026](https://www.kaggle.com/competitions/birdclef-2026) Kaggle competition.
 
 ---
 
-## Why Our Solution is Innovative
+## Results
 
-### 1. Explainable AI (XAI) for Conservation
-A major hurdle in conservation technology is the "black box" nature of deep learning. Biologists and ecologists need to *trust* the model. We implemented **Grad-CAM (Gradient-weighted Class Activation Mapping)** to visualize exactly what part of the audio the model is paying attention to when it identifies a species. 
+| Metric | Value |
+|---|---|
+| Validation ROC-AUC (padded macro) | **0.9874** |
+| Model parameters | 4.96 M |
+| Inference time (60 s soundscape, CPU) | ~4 s |
+| Training hardware | NVIDIA GTX 1650 Super (4 GB VRAM) |
 
-By analyzing the generated Grad-CAM heatmaps overlaid on the Mel-Spectrograms (e.g., `gradcam_didactic_0.png`), researchers can visually verify if the model is keying in on actual bird calls or just background noise.
+The model converges cleanly, reaching 0.97 AUC by epoch 2 and stabilizing above 0.985 through the remaining epochs with no signs of overfitting.
 
-*Check out our generated Grad-CAM artifacts in the repository to see the model's "attention" hotspots in action!*
-
-### 2. High Precision & Robustness
-Messy, field-collected data requires robust training. Our pipeline utilizes:
-- **SpecAugment** (Frequency & Time masking) to simulate missing data and background noise.
-- **MixUp Augmentation** to create robust decision boundaries between the 234 overlapping species classes.
-- **Attention Pooling** on top of the CNN backbone to intelligently aggregate features over the time dimension.
-
-### 3. Extreme Computational Economy
-Kaggle enforces a strict rule: **Inference must run offline and on CPU in under 90 minutes.** 
-- We chose **EfficientNet-B0**, a highly optimized, lightweight architecture. 
-- Audio preprocessing (Mel-Spectrogram generation) is pushed directly into the PyTorch computational graph via `torchaudio`, drastically reducing CPU bottlenecking and data-transfer overhead.
-- Our `inference.py` script chunks 1-minute audio files and processes them dynamically as a single batch, minimizing read/write operations and fully saturating the CPU cores.
+<table>
+  <tr>
+    <td><img src="training_loss.png" alt="Training Loss" width="420"/></td>
+    <td><img src="validation_auc.png" alt="Validation ROC-AUC" width="420"/></td>
+  </tr>
+  <tr>
+    <td align="center">Training Loss — 30 epochs</td>
+    <td align="center">Validation ROC-AUC — 30 epochs</td>
+  </tr>
+</table>
 
 ---
 
-## Project Structure & Pipeline
+## Model Explainability — Grad-CAM
 
-```text
+One of the core differentiators of this solution is its interpretability. Using **Grad-CAM (Gradient-weighted Class Activation Mapping)**, we extract the gradient signal flowing into the last convolutional block of EfficientNet-B0 and project it back onto the input Mel-Spectrogram. This produces a spatial heatmap that answers the question: *what part of the recording did the model actually react to?*
+
+Each figure below shows three panels for a validation sample:
+- **Left** — original log-Mel spectrogram
+- **Center** — Grad-CAM overlay (warm regions = high activation)
+- **Right** — isolated detection map
+
+The results demonstrate that the model consistently localizes on true vocalization events — harmonic structures, repetitive pulse trains, and frequency-modulated calls — rather than background noise or recording artifacts.
+
+<table>
+  <tr>
+    <td><img src="gradcam_didactic_0.png" alt="Grad-CAM: Guyalma cuta" width="560"/></td>
+  </tr>
+  <tr>
+    <td align="center"><i>Guyalma cuta — model attends to the sustained harmonic call structure</i></td>
+  </tr>
+  <tr>
+    <td><img src="gradcam_didactic_3.png" alt="Grad-CAM: Uruguay Harlequin Frog" width="560"/></td>
+  </tr>
+  <tr>
+    <td align="center"><i>Uruguay Harlequin Frog — detection map tightly aligned with the distinctive vertical call stripes</i></td>
+  </tr>
+  <tr>
+    <td><img src="gradcam_didactic_5.png" alt="Grad-CAM: Mustached Frog" width="560"/></td>
+  </tr>
+  <tr>
+    <td align="center"><i>Mustached Frog — periodic pulse train correctly identified; background frames suppressed</i></td>
+  </tr>
+</table>
+
+This level of transparency is critical for conservation applications, where ecologists need to audit automated detections before acting on them.
+
+---
+
+## Technical Approach
+
+### Architecture
+
+```
+Raw Waveform  (1 × 160,000 samples @ 32 kHz)
+      |
+  MelSpectrogram + AmplitudeToDB              torchaudio — on-the-fly, runs on GPU
+      |
+  SpecAugment (FrequencyMask + TimeMask)      training only
+      |
+  Per-batch normalization                     zero mean, unit variance
+      |
+  EfficientNet-B0  (in_chans=1)               timm — ImageNet pretrained, 4.9 M params
+      |
+  Mean pool over frequency axis
+      |
+  AttentionPooling (2-layer MLP + Softmax)    learns which frames matter most
+      |
+  Linear (1280 → 234)
+      |
+  Logits  →  sigmoid()  →  species probabilities
+```
+
+### Training Strategy
+
+| Component | Detail |
+|---|---|
+| Loss | BCEWithLogitsLoss (multi-label) |
+| Optimizer | Adam, lr = 1e-3 |
+| Mixed Precision | torch.cuda.amp (FP16) — fits 4 GB VRAM |
+| MixUp | alpha = 0.5, applied per batch |
+| SpecAugment | FrequencyMask(24), TimeMask(64) |
+| Validation | 80/20 split, padded macro ROC-AUC |
+| Tracking | MLflow — loss, AUC, Grad-CAM artifacts per epoch |
+| Checkpoint | Saved on every AUC improvement |
+
+### Why EfficientNet-B0 + Attention Pooling
+
+Standard global average pooling discards temporal information — a bird that sings for 0.3 seconds in a 5-second window will be diluted. The learned **Attention Pooling** layer assigns higher weights to frames containing actual vocalizations, producing a clip-level embedding that is dominated by the signal rather than the silence.
+
+---
+
+## Project Structure
+
+```
 BirdCLEF+2026/
 ├── src/
-│   ├── config.py           # Centralized hyperparameters & paths
-│   ├── dataset.py          # PyTorch Dataset for chunking and multi-hot encoding
-│   ├── eda.py              # Data sanity checks & Taxonomy loading
-│   ├── model.py            # EfficientNet-B0 + Attention Pooling SED Model
-│   ├── train.py            # Full training loop with AMP and MLflow tracking
-│   ├── gradcam.py          # Explainability logic (Grad-CAM generation)
-│   ├── metrics.py          # Kaggle's custom padded macro ROC-AUC metric
-│   └── inference.py        # Offline CPU-optimized submission generator
-├── mlruns/                 # Local MLflow tracking data (Loss, AUC, Artifacts)
-├── create_dummy_test.py    # Script to simulate Kaggle's hidden test set
-└── README.md               # You are here!
+│   ├── config.py              hyperparameters and data paths
+│   ├── model.py               SEDModel — EfficientNet-B0 + AttentionPooling
+│   ├── dataset.py             PyTorch Dataset — chunking, resampling, multi-hot labels
+│   ├── train.py               training loop with AMP, MixUp, MLflow logging
+│   ├── inference.py           CPU-only submission generator
+│   ├── gradcam.py             Grad-CAM implementation
+│   ├── phase4_inference.py    batch Grad-CAM visualization for validation set
+│   ├── metrics.py             padded macro ROC-AUC (mirrors Kaggle scoring)
+│   ├── eda.py                 metadata validation and taxonomy loading
+│   └── generate_plots.py      training curve plots from MLflow data
+├── kaggle_submission.ipynb    self-contained Kaggle notebook (auto-discovers all paths)
+├── create_dummy_test.py       generates synthetic soundscapes for local testing
+├── best_model.pth             trained weights (excluded from git — upload to Kaggle Models)
+└── birdclef-2026-implementation-plan.md
 ```
 
 ---
 
-## Kaggle Rule Compliance
+## Reproducing
 
-We have strictly engineered this repository to adhere to the BirdCLEF 2026 rules:
-1. **No Internet Access during Inference:** The `model.py` architecture dynamically disables downloading pre-trained weights (`pretrained=False`) during the inference phase, ensuring the notebook does not crash in Kaggle's offline environment. Weights must be loaded locally.
-2. **CPU Inference Time Limit:** The `inference.py` script chunks files and batches them natively, easily handling ~600 soundscapes within the 90-minute CPU window.
-3. **Evaluation Metric:** We implemented `padded_cmap` in `metrics.py`, exactly mirroring Kaggle's macro-averaged ROC-AUC calculation (which pads classes without true positives to prevent zero-division errors).
-
----
-
-## How to Run
-
-### 1. Training the Model
-To start training from scratch with Mixed Precision and MLflow tracking:
+**Train**
 ```bash
 python src/train.py
 ```
-*You can monitor the training progress, loss curves, and best models by running `mlflow ui` in the terminal.*
+Monitor with `mlflow ui` — loss curves, AUC, and Grad-CAM artifacts are logged per epoch.
 
-### 2. Explainability (Grad-CAM)
-To test the model's vision and generate didactic heatmaps:
+**Generate Grad-CAM visualizations**
 ```bash
 python src/phase4_inference.py
 ```
-*This will generate `gradcam_didactic_*.png` images in your workspace.*
 
-### 3. Generating the Kaggle Submission
-To run the offline, CPU-only inference pipeline that iterates over `test_soundscapes` and generates `submission.csv`:
+**Local inference test**
 ```bash
-# Optional: generate some dummy test files first if you don't have the real test set downloaded
-python create_dummy_test.py 
-
-# Generate the submission
+python create_dummy_test.py   # generate synthetic 60-second soundscapes
 python src/inference.py
 ```
 
+**Kaggle submission**
+
+Upload `best_model.pth` to *Kaggle Models* (Framework: PyTorch, License: Apache 2.0), add it to `kaggle_submission.ipynb` alongside the competition data, set Internet OFF, and submit.
+
 ---
 
-## Real-World Impact
+## Hardware
 
-Beyond winning competitions, this model is designed to be deployed directly into the Pantanal on low-power edge devices (like Raspberry Pi or Coral TPUs). Its lightweight footprint and interpretable outputs make it an ideal engine for a real-time, 24/7 acoustic monitoring grid, helping conservationists track species migration, population health, and ecosystem responses to climate change—without needing an expensive cloud infrastructure.
+Trained entirely on consumer hardware without cloud compute:
+
+| Component | Spec |
+|---|---|
+| CPU | Intel Core i7-10700F |
+| RAM | 32 GB DDR4 |
+| GPU | NVIDIA GTX 1650 Super (4 GB VRAM) |
+
+Mixed Precision (FP16) keeps peak VRAM usage under 3.2 GB throughout training.

@@ -2,7 +2,7 @@ import mlflow
 import os
 
 def test_mlflow():
-    print("=== Fase 1: Inicialização e Teste do MLflow ===")
+    print("=== Phase 1: MLflow Initialization and Test ===")
     
     # Configure MLflow directory to be within the project folder
     mlflow_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'mlruns'))
@@ -28,9 +28,9 @@ def test_mlflow():
             mlflow.log_metric("dummy_train_loss", 0.5 - (epoch * 0.1), step=epoch)
             mlflow.log_metric("dummy_val_auc", 0.6 + (epoch * 0.1), step=epoch)
             
-        print("-> Parâmetros e Métricas (dummy) logados com sucesso.")
+        print("-> Dummy parameters and metrics logged successfully.")
         
-    print("-> Teste do MLflow concluído com sucesso. Você pode visualizar executando: `mlflow ui` no terminal.")
+    print("-> MLflow test completed successfully. You can visualize by running: `mlflow ui` in the terminal.")
 
 if __name__ == "__main__":
     test_mlflow()

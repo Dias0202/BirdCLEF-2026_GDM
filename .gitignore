@@ -1,0 +1,24 @@
+# IDEs
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Data (Links/Junctions)
+input/
+
+# MLflow / Experiments
+mlruns/
+mlflow.db
+best_model.pth
+
+# Logs and temp
+*.log
+.env

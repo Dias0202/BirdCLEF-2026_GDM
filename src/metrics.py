@@ -1,43 +1,57 @@
 import numpy as np
-from sklearn.metrics import roc_auc_score
 import torch
+from sklearn.metrics import roc_auc_score
 
-def padded_cmap(solution, submission, padding_factor=5):
+
+def padded_cmap(solution, submission, padding_factor: int = 5) -> float:
     """
-    Kaggle's c-macro ROC AUC metric, optimized for evaluation.
-    
-    solution: ground truth (numpy array or tensor), shape [batch_size, num_classes]
-    submission: predictions (numpy array or tensor), shape [batch_size, num_classes]
-    padding_factor: default is 5.
+    Compute the competition evaluation metric: macro-averaged ROC-AUC with padding.
+
+    This is an exact implementation of Kaggle's BirdCLEF padded c-map metric.
+    The padding prevents NaN scores for classes that have no positive labels in
+    the current batch by artificially adding a small number of true-positive and
+    true-negative rows before computing AUC.
+
+    Args:
+        solution:       Ground-truth labels.  Shape (batch, num_classes).
+                        Accepts numpy arrays or PyTorch tensors.
+        submission:     Model predictions (probabilities).  Same shape as solution.
+        padding_factor: Number of artificial (all-ones, all-zeros) row pairs to
+                        prepend.  Default of 5 matches the official metric.
+
+    Returns:
+        float: Macro-averaged ROC-AUC score in [0, 1].
+               Returns 0.5 (random-guess baseline) when no positive labels exist.
     """
     if isinstance(solution, torch.Tensor):
         solution = solution.detach().cpu().numpy()
     if isinstance(submission, torch.Tensor):
         submission = submission.detach().cpu().numpy()
-        
-    new_rows = []
-    
-    # Check if there are any positive labels at all across the batch
+
+    # Guard against batches with no positive labels at all.
     if solution.sum() == 0:
-        return 0.5 # Default AUC for random guessing
-        
-    for i in range(padding_factor):
-        new_rows.append([1 for i in range(len(solution[0]))])
-        new_rows.append([0 for i in range(len(solution[0]))])
-        
-    solution = np.vstack([solution, new_rows])
-    submission = np.vstack([submission, new_rows])
-    
-    score = roc_auc_score(
-        solution, submission, average='macro'
-    )
-    
-    return score
+        return 0.5
+
+    num_classes = solution.shape[1]
+
+    # Build the padding rows: alternating all-ones and all-zeros.
+    # This ensures every class has at least one positive and one negative example,
+    # which is required by roc_auc_score to produce a finite AUC per class.
+    padding_rows = []
+    for _ in range(padding_factor):
+        padding_rows.append([1] * num_classes)
+        padding_rows.append([0] * num_classes)
+
+    padding_array = np.array(padding_rows, dtype=np.float32)
+    solution   = np.vstack([solution,   padding_array])
+    submission = np.vstack([submission, padding_array])
+
+    return roc_auc_score(solution, submission, average="macro")
+
 
 if __name__ == "__main__":
-    print("=== Testando Métrica padded_cmap (ROC AUC macro) ===")
+    print("=== padded_cmap smoke test ===")
     dummy_targets = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    dummy_preds = np.array([[0.9, 0.1, 0.1], [0.2, 0.8, 0.3], [0.1, 0.2, 0.9]])
-    
+    dummy_preds   = np.array([[0.9, 0.1, 0.1], [0.2, 0.8, 0.3], [0.1, 0.2, 0.9]])
     score = padded_cmap(dummy_targets, dummy_preds)
-    print(f"Dummy AUC Score: {score:.4f}")
+    print(f"Dummy AUC: {score:.4f}  (expected ~1.0 for near-perfect predictions)")

@@ -48,28 +48,28 @@ O grande diferencial de explicabilidade da solução.
 
 ## 8. Fases de Implementação
 
-### Fase 1: Setup do Ambiente e EDA
+### Fase 1: Setup do Ambiente e EDA [CONCLUÍDO]
 1. Configuração do ambiente PyTorch + CUDA compatível com a GTX 1650.
 2. Inicialização e teste do MLflow Dashboard local.
 3. Leitura e processamento das metadatas (`train.csv`, `taxonomy.csv`).
 4. Criação do Dataset/DataLoader customizado em PyTorch focado em carregar e cortar *chunks* de 5 segundos.
 
-### Fase 2: Pipeline Base (SED + EfficientNet)
+### Fase 2: Pipeline Base (SED + EfficientNet) [CONCLUÍDO]
 1. Implementação da conversão para Mel-Espectrograma (on-the-fly).
 2. Construção da classe do modelo SED baseada em `EfficientNet-B0` com Attention Pooling.
 3. Escrita do loop de Treinamento e Validação integrando `torch.cuda.amp` (Mixed Precision).
 4. Acoplamento de logs no MLflow (loss de treino, ROC-AUC de validação).
 
-### Fase 3: Augmentations e Melhoria de Generalização
+### Fase 3: Augmentations e Melhoria de Generalização [CONCLUÍDO]
 1. Integração de `MixUp` na batch de treinamento.
 2. Adição de `SpecAugment`.
 3. Hyperparameter tuning guiado por observação no MLflow (Learning Rate, taxas de dropout, peso do mixup).
 
-### Fase 4: Explicabilidade e Relatórios
+### Fase 4: Explicabilidade e Relatórios [CONCLUÍDO]
 1. Implementação das rotinas do Grad-CAM.
 2. Logging sistemático de imagens de validação (Spectrograma vs Grad-CAM) no MLflow Artifacts.
 3. Exportação do código fonte para conformidade com regras do Kaggle.
 
-### Fase 5: Submissão e Otimização para Inferência
+### Fase 5: Submissão e Otimização para Inferência [CONCLUÍDO]
 1. Adaptação do pipeline para ler os `test_soundscapes` e produzir o `submission.csv` no tempo limite estipulado pelo Kaggle.
-2. Criação do notebook final sem acesso à internet respeitando todas as `Code Requirements` da plataforma Kaggle.
+2. Criação do notebook final sem acesso à internet respeitando todas as `Code Requirements` da plataforma Kaggle (`kaggle_submission.ipynb`).

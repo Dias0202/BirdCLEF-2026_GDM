@@ -1,15 +1,15 @@
 import os
 from dotenv import load_dotenv
 
-# Mapeia o caminho absoluto do arquivo .env com base na localização do script
-caminho_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-load_dotenv(caminho_env)
+# Map the absolute path of the .env file based on the script's location
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+load_dotenv(env_path)
 
-# Validação para interromper a execução caso a credencial não seja lida
+# Validation to interrupt execution if the credential is not read
 if not os.environ.get("KAGGLE_API_TOKEN"):
-    raise ValueError("A variável KAGGLE_API_TOKEN não foi encontrada. Verifique a extensão e o local do arquivo .env.")
+    raise ValueError("The KAGGLE_API_TOKEN variable was not found. Check the extension and location of the .env file.")
 
-# Importação feita após a garantia de que as variáveis estão no ambiente
+# Import made after ensuring the variables are in the environment
 import kagglehub
 
 path = kagglehub.competition_download('birdclef-2026')

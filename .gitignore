@@ -22,3 +22,20 @@ best_model.pth
 # Logs and temp
 *.log
 .env
+
+# Model weights and experiment stores (kept locally / in Kaggle Models, not in git)
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+**/mlruns/
+**/mlflow.db
+
+# Competition data (Kaggle rules: not redistributable)
+data/
+*.ogg
+*.wav
+submission.csv
+
+.pytest_cache/

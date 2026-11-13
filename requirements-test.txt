@@ -1,0 +1,5 @@
+# Minimal, pinned environment for the unit tests in tests/ (no PyTorch needed).
+numpy==2.5.4
+pandas==3.1.1
+scikit-learn==1.9.1
+pytest==9.2.0

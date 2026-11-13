@@ -22,3 +22,7 @@ mlflow
 # Utilities
 tqdm
 opencv-python
+
+# Data download (main.py)
+kagglehub
+python-dotenv

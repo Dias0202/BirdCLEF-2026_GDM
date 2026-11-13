@@ -4,9 +4,15 @@ A **Fase 4** marcou a conclusão do ciclo de treinamento e a abertura da "caixa-
 
 ## 1. Desempenho do Modelo Final
 O treinamento foi executado por 29 épocas, utilizando MixUp e SpecAugment.
-- **ROC-AUC Final:** **0.9882**
-- **Loss de Validação:** **0.0077**
-- **Convergência:** O modelo apresentou uma curva de aprendizado extremamente estável, com a métrica AUC atingindo o patamar de 0.98 logo nas primeiras 10 épocas e refinando-se até o final.
+
+> **Nota posterior — número não válido como estimativa.** O ROC-AUC registrado nesta fase (0,9882) foi medido com a
+> `padded_cmap`, que atribui AUC próxima de 1,0 a classes sem positivos na validação, sobre um split aleatório que não
+> separa gravações do mesmo gravador. Ele não estima o desempenho na competição. A validação foi corrigida (folds
+> agrupados por gravador, métrica que ignora classes sem positivos — ver `src/metrics.py` e `src/validation.py`) e o
+> score correspondente ainda não foi recalculado.
+
+- **Loss de Validação (split antigo):** 0.0077
+- **Convergência:** curva de treino estável ao longo das 29 épocas.
 
 ## 2. Implementação do Grad-CAM
 - **Técnica:** Gradient-weighted Class Activation Mapping.
@@ -32,4 +38,4 @@ Todos os resultados foram centralizados no **MLflow**:
 - [x] Fase 3: Generalização (MixUp/SpecAugment)
 - [x] Fase 4: Explicabilidade (Grad-CAM)
 
-O sistema está pronto para submissão ou para ser utilizado em monitoramento acústico real no Pantanal.
+Antes de qualquer uso real, falta medir o desempenho com a validação corrigida e contra uma linha de base (ver README).

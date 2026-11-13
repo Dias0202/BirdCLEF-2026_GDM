@@ -10,8 +10,9 @@ from tqdm import tqdm
 from config import BATCH_SIZE, BEST_MODEL_PATH
 from dataset import get_dataloader
 from eda import run_eda
-from metrics import padded_cmap
+from metrics import macro_roc_auc
 from model import SEDModel
+from validation import train_val_split
 
 
 def mixup_data(
@@ -101,10 +102,11 @@ def val_epoch(
     Run one full validation epoch without gradient computation.
 
     Collects predictions from all batches, then computes the competition
-    metric (macro ROC-AUC with padding) over the full validation set.
+    metric (macro ROC-AUC over classes with true positives) on the full
+    validation fold.
 
     Returns:
-        tuple: (val_loss, val_auc) — mean BCE loss and padded_cmap AUC.
+        tuple: (val_loss, val_auc) — mean BCE loss and macro ROC-AUC.
     """
     model.eval()
     running_loss = 0.0
@@ -130,7 +132,7 @@ def val_epoch(
     all_preds   = torch.cat(all_preds)
 
     val_loss = running_loss / len(dataloader)
-    val_auc  = padded_cmap(all_targets, all_preds)
+    val_auc  = macro_roc_auc(all_targets.float(), all_preds.float())
     return val_loss, val_auc
 
 
@@ -154,9 +156,8 @@ def main():
     if train_df is None:
         return
 
-    # 80 / 20 reproducible split (fixed random_state for consistent evaluation).
-    train_split = train_df.sample(frac=0.8, random_state=42)
-    val_split   = train_df.drop(train_split.index)
+    # Fold 0 of 5, grouped by recordist and stratified by species (see validation.py).
+    train_split, val_split = train_val_split(train_df, fold=0, n_splits=5, seed=42)
     print(f"Train: {len(train_split)} samples  |  Val: {len(val_split)} samples")
 
     train_loader = get_dataloader(train_split, is_train=True)
@@ -181,6 +182,8 @@ def main():
             "mixed_precision" : True,
             "mixup_alpha"     : 0.5,
             "spec_augment"    : True,
+            "validation"      : "StratifiedGroupKFold(5, groups=author) fold 0",
+            "val_metric"      : "macro ROC-AUC over classes with positives",
         })
 
         for epoch in range(num_epochs):

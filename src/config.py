@@ -1,13 +1,15 @@
+import os
 import sys
 from pathlib import Path
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data Paths
-# Competition data is downloaded via kagglehub and cached locally.
-# Falls back to a local "data/" directory when the cache is absent
-# (e.g., during CI or early development without Kaggle credentials).
+# Competition data is downloaded via kagglehub (main.py) into its default cache.
+# Override with the BIRDCLEF_DATA_DIR environment variable; falls back to a
+# local "data/" directory when neither exists (e.g. CI without Kaggle credentials).
 # ─────────────────────────────────────────────────────────────────────────────
-DATA_DIR = Path(r"C:\Users\<user>\.cache\kagglehub\competitions\birdclef-2026")
+_KAGGLEHUB_CACHE = Path.home() / ".cache" / "kagglehub" / "competitions" / "birdclef-2026"
+DATA_DIR = Path(os.environ.get("BIRDCLEF_DATA_DIR", _KAGGLEHUB_CACHE))
 if not DATA_DIR.exists():
     DATA_DIR = Path("data")
 

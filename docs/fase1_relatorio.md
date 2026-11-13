@@ -8,7 +8,7 @@ A **Fase 1** descrita no plano de implementação foi totalmente concluída e te
 - **Teste:** Dependências principais foram instaladas no `.venv`.
 
 ## 2. Leitura e Processamento de Metadatas (EDA)
-- Criado o script `src/eda.py` para automatizar a leitura do dataset a partir do cache (`C:\Users\<user>\.cache\kagglehub\competitions\birdclef-2026`).
+- Criado o script `src/eda.py` para automatizar a leitura do dataset a partir do cache do kagglehub (`~/.cache/kagglehub/competitions/birdclef-2026`, configurável por `BIRDCLEF_DATA_DIR`).
 - **Teste:** O script leu os arquivos com sucesso:
   - `train.csv`: 35.549 registros.
   - `taxonomy.csv`: 234 classes oficiais.

@@ -11,6 +11,7 @@ from dataset import BirdCLEFDataset
 from eda import run_eda
 from gradcam import GradCAM
 from model import SEDModel
+from validation import train_val_split
 
 
 def main():
@@ -44,14 +45,13 @@ def main():
     print("Model loaded successfully.")
 
     # ── Prepare validation data ─────────────────────────────────────────────
-    # Reproduce the exact same 80/20 split used during training so that the
-    # Grad-CAM visualisations are generated on held-out (unseen) samples.
+    # Reproduce the validation fold used during training so that the
+    # Grad-CAM visualisations are generated on held-out (unseen) recordists.
     train_df, taxonomy_df = run_eda()
     if train_df is None:
         return
 
-    train_split = train_df.sample(frac=0.8, random_state=42)
-    val_split   = train_df.drop(train_split.index).reset_index(drop=True)
+    _, val_split = train_val_split(train_df, fold=0, n_splits=5, seed=42)
 
     # Build a label-to-common-name mapping for readable plot titles.
     label_to_name = dict(

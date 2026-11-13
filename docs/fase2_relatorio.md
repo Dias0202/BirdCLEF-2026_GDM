@@ -9,6 +9,12 @@ A **Fase 2** foi completamente implementada, testada e validada de acordo com o 
 - **Attention Pooling (Mecanismo Temporal):** Foi implementada a classe `AttentionPooling`. Ela colapsa a dimensão temporal gerada pela EfficientNet, prestando atenção nos instantes em que o evento acústico de fato acontece. Uma camada Linear final mapeia o vetor para as **234 classes** do Pantanal.
 
 ## 2. Métrica Customizada
+> **Nota posterior:** a `padded_cmap` descrita abaixo foi substituída. O *padding* acrescenta linhas positivas a todas as
+> classes, de modo que classes sem nenhum positivo na validação recebem AUC próxima de 1,0 e inflam a média. A métrica
+> da competição ignora essas classes; `src/metrics.py` agora implementa `macro_roc_auc` com essa regra, e a validação
+> passou a usar folds agrupados por gravador (`src/validation.py`). Os números de AUC registrados nestes relatórios
+> foram medidos com a métrica antiga e não são comparáveis.
+
 - Criado o script `src/metrics.py` com a função `padded_cmap`.
 - Esta função replica a métrica *macro ROC AUC* do Kaggle, lidando com segurança matemática contra *batches* sem rótulos positivos (adicionando padronização `padding_factor`) e garantindo o comportamento avaliado na competição BirdCLEF.
 
